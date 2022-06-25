@@ -4,7 +4,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import ru.netology.data.User;
+
 
 import java.time.Duration;
 
@@ -12,7 +12,10 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.*;
-import static ru.netology.data.DataGenerator.InfoDataGenerator.*;
+import static ru.netology.data.DataGenerator.Registration.getRegisteredUser;
+import static ru.netology.data.DataGenerator.Registration.getUser;
+import static ru.netology.data.DataGenerator.generateLogin;
+import static ru.netology.data.DataGenerator.generatePassword;
 
 
 public class LoginTest {
@@ -24,42 +27,54 @@ public class LoginTest {
 
     @Test
     public void shouldAuthorize() {
-        User active = userInfo("active");
-        AuthTest.setUpAll(active);
-        $x("//*[contains(@name,\"login\")]").val(active.getLogin());
-        $x("//*[contains(@name,\"password\")]").val(active.getPassword());
+        var registeredUser = getRegisteredUser("active");
+        $x("//*[contains(@name,\"login\")]").val(registeredUser.getLogin());
+        $x("//*[contains(@name,\"password\")]").val(registeredUser.getPassword());
         $(".button").click();
         $(withText("Личный кабинет")).shouldBe(Condition.visible);
     }
 
     @Test
     public void shouldNotAuthorize() {
-        User blocked = userInfo("blocked");
-        AuthTest.setUpAll(blocked);
-        $x("//*[contains(@name,\"login\")]").val(blocked.getLogin());
-        $x("//*[contains(@name,\"password\")]").val(blocked.getPassword());
+        var registeredUser = getRegisteredUser("blocked");
+        $x("//*[contains(@name,\"login\")]").val(registeredUser.getLogin());
+        $x("//*[contains(@name,\"password\")]").val(registeredUser.getPassword());
         $(".button").click();
         $(withText("Ошибка!")).shouldBe(visible);
         $(".notification__content").shouldHave(text("Ошибка! " + "Пользователь заблокирован")).shouldBe(visible, Duration.ofSeconds(7));
     }
+
     @Test
     public void shouldNotAuthorizeWithWrongLogin() {
-        User active = userInfo("active");
-        AuthTest.setUpAll(active);
-        $x("//*[contains(@name,\"login\")]").val(generateWrongLogin());
-        $x("//*[contains(@name,\"password\")]").val(active.getPassword());
+        var registeredUser = getRegisteredUser("active");
+        var wrongLogin = generateLogin();
+        $x("//*[contains(@name,\"login\")]").val(wrongLogin);
+        $x("//*[contains(@name,\"password\")]").val(registeredUser.getPassword());
+        $(".button").click();
+        $(withText("Ошибка!")).shouldBe(visible);
+        $(".notification__content").shouldHave(text("Ошибка! " + "Неверно указан логин или пароль")).shouldBe(visible, Duration.ofSeconds(7));
+    }
+
+    @Test
+    public void shouldNotAuthorizeWithWrongPassword() {
+        var registeredUser = getRegisteredUser("active");
+        var wrongPassword = generatePassword();
+        $x("//*[contains(@name,\"login\")]").val(registeredUser.getLogin());
+        $x("//*[contains(@name,\"password\")]").val(wrongPassword);
         $(".button").click();
         $(withText("Ошибка!")).shouldBe(visible);
         $(".notification__content").shouldHave(text("Ошибка! " + "Неверно указан логин или пароль")).shouldBe(visible, Duration.ofSeconds(7));
     }
     @Test
-    public void shouldNotAuthorizeWithWrongPassword() {
-        User active = userInfo("active");
-        AuthTest.setUpAll(active);
-        $x("//*[contains(@name,\"login\")]").val(active.getLogin());
-        $x("//*[contains(@name,\"password\")]").val(generateWrongPassword());
+    void shouldNotAuthorizeIfNotRegisteredUser() {
+        var notRegisteredUser = getUser("active");
+        $x("//*[contains(@name,\"login\")]").val(generateLogin());
+        $x("//*[contains(@name,\"password\")]").val(generatePassword());
         $(".button").click();
         $(withText("Ошибка!")).shouldBe(visible);
         $(".notification__content").shouldHave(text("Ошибка! " + "Неверно указан логин или пароль")).shouldBe(visible, Duration.ofSeconds(7));
     }
 }
+
+
+
